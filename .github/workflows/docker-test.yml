@@ -8,6 +8,10 @@ on:
 jobs:
   docker-build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -19,3 +23,13 @@ jobs:
           docker run --rm soukelkom:test php -m | grep -E "exif|pdo_mysql|gd|intl|mbstring|zip" \
             || exit 1
           docker run --rm soukelkom:test sh -c 'test -f /app/start.sh && echo "start.sh present"'
+
+      - name: Push image to GitHub Container Registry (Plan B deployment)
+        run: |
+          IMG="ghcr.io/${GITHUB_REPOSITORY,,}:latest"
+          docker tag soukelkom:test "$IMG"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "$IMG"
+          docker tag soukelkom:test "ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.sha }}"
+          docker push "ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.sha }}"
+          echo "Pushed image to ${IMG}"

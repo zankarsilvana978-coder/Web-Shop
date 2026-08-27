@@ -30,7 +30,8 @@ WORKDIR /app
 COPY --from=assets /app .
 # Laravel needs writable storage + cache at runtime
 RUN chmod -R 777 storage bootstrap/cache
+# Deterministic, self-diagnosing boot script
+COPY scripts/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 EXPOSE 8080
-# Fail-soft boot: migration errors no longer kill the container —
-# the server stays up and the log names the missing piece.
-CMD ["sh", "-c", "php artisan migrate --force --no-interaction -q; rc=$?; echo \"[boot] migrate exit=$rc\"; if [ $rc -ne 0 ]; then echo '[boot] DB not reachable - add MySQL service and DB_HOST/DB_PORT/DB_DATABASE/DB_USERNAME/DB_PASSWORD variables'; fi; php artisan storage:link >/dev/null 2>&1 || echo '[boot] storage link skipped'; echo \"[boot] serving on ${PORT:-8080}\"; exec php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
+CMD ["sh", "/app/start.sh"]

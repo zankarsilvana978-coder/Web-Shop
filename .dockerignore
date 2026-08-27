@@ -1,0 +1,11 @@
+.git
+.gitignore
+node_modules
+vendor
+storage/logs/*
+.env
+.env.*
+*.sqlite
+public/build
+nixpacks.toml.txt
+README.md

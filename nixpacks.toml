@@ -1,0 +1,11 @@
+[phases.startup]
+nixPkgs = ["php","composer","nodejs","npm"]
+
+[phases.install]
+cmds = ["composer install --no-dev --optimize-autoloader","npm install","npm run build"]
+
+[phases.build]
+cmds = ["php artisan key:generate"]
+
+[start]
+cmd = "php artisan serve --host 0.0.0.0 --port $PORT"

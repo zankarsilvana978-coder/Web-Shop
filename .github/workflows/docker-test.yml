@@ -1,0 +1,21 @@
+name: Docker build check
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the Docker image (same as Railway)
+        run: docker build -t soukelkom:test .
+
+      - name: Verify the boot dependencies exist in the image
+        run: |
+          docker run --rm soukelkom:test php -m | grep -E "exif|pdo_mysql|gd|intl|mbstring|zip" \
+            || exit 1
+          docker run --rm soukelkom:test sh -c 'test -f /app/start.sh && echo "start.sh present"'

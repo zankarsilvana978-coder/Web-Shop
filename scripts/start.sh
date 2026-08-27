@@ -7,7 +7,7 @@ echo "[boot] APP_ENV=${APP_ENV:-<unset>} DB_HOST=${DB_HOST:-<unset>} DB_PORT=${D
 # set it, generate an ephemeral one so the app responds instead of 500-ing
 # on every page. Prefer setting APP_KEY in Railway for persistent sessions.
 if [ -z "${APP_KEY:-}" ]; then
-    APP_KEY=$(php artisan key:generate --show)
+    APP_KEY=$(php artisan key:generate --show --no-ansi | tr -d '\r\n ')
     export APP_KEY
     echo "[boot] APP_KEY unset - generated ephemeral key (recommend setting APP_KEY in Railway)"
 fi

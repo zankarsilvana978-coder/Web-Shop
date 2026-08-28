@@ -77,7 +77,7 @@ class DatabaseSeeder extends Seeder
         ]);
         $nadineUser->assignRole('seller');
 
-        Product::create([
+        $iphone = Product::create([
             'seller_id' => $ahmed->id,
             'category_id' => $electronics->id,
             'name' => 'iPhone 15 128GB',
@@ -88,8 +88,9 @@ class DatabaseSeeder extends Seeder
             'sku' => 'IP15-128-BLK',
             'status' => ProductStatus::Active,
         ]);
+        $this->attachDemoImage($iphone, 'database/seed-assets/iphone15.jpg');
 
-        Product::create([
+        $case = Product::create([
             'seller_id' => $ahmed->id,
             'category_id' => $electronics->id,
             'name' => 'iPhone Case Clear',
@@ -100,8 +101,9 @@ class DatabaseSeeder extends Seeder
             'sku' => 'CASE-CLR-15',
             'status' => ProductStatus::Active,
         ]);
+        $this->attachDemoImage($case, 'database/seed-assets/iphone-case-clear.jpg');
 
-        Product::create([
+        $sneakers = Product::create([
             'seller_id' => $nadine->id,
             'category_id' => $fashion->id,
             'name' => 'Nike Air Sneakers',
@@ -112,8 +114,9 @@ class DatabaseSeeder extends Seeder
             'sku' => 'NIKE-AIR-42',
             'status' => ProductStatus::Active,
         ]);
+        $this->attachDemoImage($sneakers, 'database/seed-assets/nike-air.jpg');
 
-        Product::create([
+        $tshirt = Product::create([
             'seller_id' => $nadine->id,
             'category_id' => $fashion->id,
             'name' => 'Classic T-Shirt',
@@ -124,6 +127,7 @@ class DatabaseSeeder extends Seeder
             'sku' => 'TSHIRT-CLS-M',
             'status' => ProductStatus::Active,
         ]);
+        $this->attachDemoImage($tshirt, 'database/seed-assets/classic-t-shirt.jpg');
 
         $pendingUser = User::create([
             'name' => 'Karim H.',
@@ -140,5 +144,15 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->command?->info('Demo accounts: admin@soukelkom.test / ahmed@soukelkom.test / nadine@soukelkom.test / buyer@soukelkom.test — password: password');
+    }
+
+    /** Attach a bundled demo image to a product if the file exists. */
+    protected function attachDemoImage(Product $product, string $relativePath): void
+    {
+        $path = base_path($relativePath);
+
+        if (is_file($path)) {
+            $product->addMedia($path)->toMediaCollection(Product::IMAGE_COLLECTION);
+        }
     }
 }

@@ -30,6 +30,11 @@ WORKDIR /app
 COPY --from=assets /app .
 # Laravel needs writable storage + cache at runtime
 RUN chmod -R 777 storage bootstrap/cache
+# Generate a production .env INSIDE the image with a real APP_KEY.
+# Railway environment variables still override these values at runtime.
+RUN printf 'APP_NAME=Soukelkom\nAPP_ENV=production\nAPP_KEY=\nAPP_DEBUG=false\nAPP_URL=http://localhost\nLOG_CHANNEL=stack\nLOG_LEVEL=error\nDB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_PORT=3306\nDB_DATABASE=soukelkom\nDB_USERNAME=root\nDB_PASSWORD=\nSESSION_DRIVER=database\nCACHE_STORE=database\nQUEUE_CONNECTION=database\nFILESYSTEM_DISK=local\nSCOUT_DRIVER=collection\nMAIL_MAILER=log\n' > /app/.env \
+    && php artisan key:generate --force --no-ansi \
+    && grep -c 'APP_KEY=' /app/.env
 # Deterministic, self-diagnosing boot script
 COPY scripts/start.sh /app/start.sh
 RUN chmod +x /app/start.sh

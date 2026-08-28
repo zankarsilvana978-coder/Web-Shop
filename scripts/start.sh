@@ -3,6 +3,10 @@ set -u
 
 echo "[boot] APP_ENV=${APP_ENV:-<unset>} DB_HOST=${DB_HOST:-<unset>} DB_PORT=${DB_PORT:-<unset>} DB_DATABASE=${DB_DATABASE:-<unset>} DB_USERNAME=${DB_USERNAME:-<unset>} PORT=${PORT:-<unset>}"
 
+# Never let a cached config pin old DB/env values (config:cache is poison here)
+php artisan optimize:clear >/dev/null 2>&1
+echo "[boot] config/route/view caches cleared"
+
 # Laravel hard-requires APP_KEY for cookie encryption. If the deploy did not
 # set it, generate an ephemeral one so the app responds instead of 500-ing
 # on every page. Prefer setting APP_KEY in Railway for persistent sessions.
@@ -17,7 +21,20 @@ fi
 (
     i=0
     while [ "$i" -lt 12 ]; do
-        if php -r 'try { new PDO("mysql:host=".(getenv("DB_HOST") ?: "127.0.0.1").";port=".(getenv("DB_PORT") ?: "3306").";dbname=".(getenv("DB_DATABASE") ?: "soukelkom"), getenv("DB_USERNAME") ?: "root", (string) getenv("DB_PASSWORD")); exit(0); } catch (Throwable $e) { exit(1); }' >/dev/null 2>&1; then
+        if php -r '
+            $url = getenv("DATABASE_URL") ?: getenv("DB_URL");
+            if ($url) {
+                $p = parse_url($url);
+                $dsn = "mysql:host=".($p["host"] ?? "127.0.0.1").";port=".($p["port"] ?? "3306").";dbname=".ltrim($p["path"] ?? "/", "/");
+                $user = $p["user"] ?? "root";
+                $pass = $p["pass"] ?? "";
+            } else {
+                $dsn = "mysql:host=".(getenv("DB_HOST") ?: "127.0.0.1").";port=".(getenv("DB_PORT") ?: "3306").";dbname=".(getenv("DB_DATABASE") ?: "soukelkom");
+                $user = getenv("DB_USERNAME") ?: "root";
+                $pass = (string) getenv("DB_PASSWORD");
+            }
+            try { new PDO($dsn, $user, $pass); exit(0); } catch (Throwable $e) { exit(1); }
+        ' >/dev/null 2>&1; then
             echo "[boot] database reachable"
             break
         fi

@@ -1,0 +1,53 @@
+# Laravel 11 + Vite + Tailwind — single-stage Apache Dockerfile (Railway-ready)
+FROM php:8.2-apache
+
+# Apache mods required by Laravel's public/.htaccess
+RUN a2enmod rewrite headers
+
+# System packages + PHP extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        curl \
+        libzip-dev \
+        libpng-dev \
+        libjpeg-dev \
+        libicu-dev \
+        libonig-dev \
+        libxml2-dev \
+    && docker-php-ext-configure gd --with-jpeg \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl gd intl zip opcache \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Node.js + npm (needed to build Vite assets inside the image)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Copy application code
+WORKDIR /var/www/html
+COPY . .
+
+# PHP dependencies (production)
+RUN composer install --optimize-autoloader --no-dev --no-interaction
+
+# Node dependencies
+RUN npm install
+
+# Build frontend assets -> public/build
+RUN npm run build
+
+# Laravel storage + cache permissions
+RUN chmod -R 777 storage bootstrap/cache
+
+# Point Apache document root to Laravel's public folder
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+EXPOSE 80

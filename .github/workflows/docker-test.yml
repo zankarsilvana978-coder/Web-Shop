@@ -36,3 +36,19 @@ jobs:
           docker tag soukelkom:test "ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.sha }}"
           docker push "ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.sha }}"
           echo "Pushed image to ${IMG}"
+
+  apache-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the Apache variant image
+        run: docker build -f Dockerfile.apache -t soukelkom-apache:test .
+
+      - name: Verify Apache image is healthy
+        run: |
+          docker run --rm soukelkom-apache:test php -m | grep -E "exif|pdo_mysql|gd|intl|mbstring|zip" || exit 1
+          docker run --rm soukelkom-apache:test bash -c 'test -f /var/www/html/public/build/manifest.json && echo "vite manifest present" || exit 1'
+          docker run --rm soukelkom-apache:test bash -c 'test -d /var/www/html/vendor && echo "vendor present"'
+          docker run --rm soukelkom-apache:test bash -c 'apache2ctl -t && echo "apache config OK"'

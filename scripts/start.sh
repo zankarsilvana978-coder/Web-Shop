@@ -43,11 +43,25 @@ fi
         sleep 5
     done
 
-    if php artisan migrate --force --quiet; then
-        echo "[boot] migrate OK"
-        php artisan db:seed --force --quiet && echo "[boot] demo content seeded OK" || echo "[boot] seed skipped/failed"
-    else
-        echo "[boot] MIGRATE FAILED - check DB_HOST/DB_PORT/DB_DATABASE/DB_USERNAME/DB_PASSWORD"
+    attempt=1
+    while [ "$attempt" -le 3 ]; do
+        if php artisan migrate --force --no-interaction > /tmp/migrate.log 2>&1; then
+            echo "[boot] migrate OK (attempt $attempt)"
+            if php artisan db:seed --force --no-interaction > /tmp/seed.log 2>&1; then
+                echo "[boot] demo content seeded OK"
+            else
+                echo "[boot] seed issue:"
+                tail -n 5 /tmp/seed.log
+            fi
+            break
+        fi
+        echo "[boot] migrate attempt $attempt failed:"
+        tail -n 5 /tmp/migrate.log
+        attempt=$((attempt + 1))
+        sleep 5
+    done
+    if [ "$attempt" -gt 3 ]; then
+        echo "[boot] MIGRATE FAILED after 3 attempts - see lines above"
     fi
 
     php artisan storage:link >/dev/null 2>&1 || echo "[boot] storage already linked"

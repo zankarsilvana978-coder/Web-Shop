@@ -23,6 +23,8 @@ jobs:
           docker run --rm soukelkom:test php -m | grep -E "exif|pdo_mysql|gd|intl|mbstring|zip" \
             || exit 1
           docker run --rm soukelkom:test sh -c 'test -f /app/start.sh && echo "start.sh present"'
+          docker run --rm soukelkom:test sh -c 'test -f /app/public/build/manifest.json && echo "vite manifest present" || exit 1'
+          docker run --rm soukelkom:test sh -c 'ls /app/public/build/assets/'
 
       - name: Push image to GitHub Container Registry (Plan B deployment)
         run: |

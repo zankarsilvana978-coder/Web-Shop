@@ -28,6 +28,7 @@ fi
 
     if php artisan migrate --force --quiet; then
         echo "[boot] migrate OK"
+        php artisan db:seed --force --quiet && echo "[boot] demo content seeded OK" || echo "[boot] seed skipped/failed"
     else
         echo "[boot] MIGRATE FAILED - check DB_HOST/DB_PORT/DB_DATABASE/DB_USERNAME/DB_PASSWORD"
     fi

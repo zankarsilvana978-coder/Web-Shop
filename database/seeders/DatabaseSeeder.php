@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\ProductStatus;
+use App\Enums\SellerStatus;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Seller;
@@ -13,6 +14,7 @@ use Illuminate\Support\Str;
 /**
  * Demo content for a fresh install: admin, sample approved sellers
  * with live products, one pending seller awaiting moderation.
+ * Idempotent: safe to run on every boot (db:seed --force).
  */
 class DatabaseSeeder extends Seeder
 {
@@ -23,127 +25,127 @@ class DatabaseSeeder extends Seeder
             SettingsSeeder::class,
         ]);
 
-        $admin = User::create([
-            'name' => 'Platform Admin',
-            'email' => 'admin@soukelkom.test',
-            'password' => 'password',
-            'email_verified_at' => now(),
-        ]);
-        $admin->assignRole('admin');
+        $admin = $this->user('Platform Admin', 'admin@soukelkom.test');
+        $admin->syncRoles('admin');
 
-        $buyer = User::create([
-            'name' => 'Demo Buyer',
-            'email' => 'buyer@soukelkom.test',
-            'password' => 'password',
-            'email_verified_at' => now(),
-        ]);
-        $buyer->assignRole('buyer');
+        $buyer = $this->user('Demo Buyer', 'buyer@soukelkom.test');
+        $buyer->syncRoles('buyer');
 
-        $electronics = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-        $fashion = Category::create(['name' => 'Fashion', 'slug' => 'fashion']);
-        Category::create(['name' => 'Home & Living', 'slug' => 'home-living']);
-        Category::create(['name' => 'Beauty & Health', 'slug' => 'beauty-health']);
-        Category::create(['name' => 'Sports & Outdoors', 'slug' => 'sports-outdoors']);
+        $electronics = Category::firstOrCreate(['slug' => 'electronics'], ['name' => 'Electronics']);
+        $fashion = Category::firstOrCreate(['slug' => 'fashion'], ['name' => 'Fashion']);
+        Category::firstOrCreate(['slug' => 'home-living'], ['name' => 'Home & Living']);
+        Category::firstOrCreate(['slug' => 'beauty-health'], ['name' => 'Beauty & Health']);
+        Category::firstOrCreate(['slug' => 'sports-outdoors'], ['name' => 'Sports & Outdoors']);
 
-        $ahmedUser = User::create([
-            'name' => 'Ahmed K.',
-            'email' => 'ahmed@soukelkom.test',
-            'password' => 'password',
-            'email_verified_at' => now(),
-        ]);
-        $ahmed = Seller::create([
-            'user_id' => $ahmedUser->id,
-            'store_name' => 'Ahmed Electronics',
-            'slug' => 'ahmed-electronics',
-            'description' => 'Phones, laptops and gadgets shipped from Beirut.',
-            'phone' => '+961 3 111 222',
-            'status' => 'approved',
-        ]);
-        $ahmedUser->assignRole('seller');
+        $ahmed = $this->seller(
+            'Ahmed K.',
+            'ahmed@soukelkom.test',
+            'Ahmed Electronics',
+            'ahmed-electronics',
+            'Phones, laptops and gadgets shipped from Beirut.',
+            '+961 3 111 222',
+        );
 
-        $nadineUser = User::create([
-            'name' => 'Nadine S.',
-            'email' => 'nadine@soukelkom.test',
-            'password' => 'password',
-            'email_verified_at' => now(),
-        ]);
-        $nadine = Seller::create([
-            'user_id' => $nadineUser->id,
-            'store_name' => 'Nadine Fashion',
-            'slug' => 'nadine-fashion',
-            'description' => 'Streetwear and sneakers, delivered across Lebanon.',
-            'phone' => '+961 3 333 444',
-            'status' => 'approved',
-        ]);
-        $nadineUser->assignRole('seller');
+        $nadine = $this->seller(
+            'Nadine S.',
+            'nadine@soukelkom.test',
+            'Nadine Fashion',
+            'nadine-fashion',
+            'Streetwear and sneakers, delivered across Lebanon.',
+            '+961 3 333 444',
+        );
 
-        $iphone = Product::create([
-            'seller_id' => $ahmed->id,
-            'category_id' => $electronics->id,
-            'name' => 'iPhone 15 128GB',
-            'slug' => 'iphone-15-128gb',
-            'description' => 'Brand new sealed iPhone 15. Official warranty, ships from Beirut within 48h.',
-            'price' => 1000.00,
-            'stock' => 10,
-            'sku' => 'IP15-128-BLK',
-            'status' => ProductStatus::Active,
-        ]);
-        $this->attachDemoImage($iphone, 'database/seed-assets/iphone15.jpg');
+        $this->product($ahmed, $electronics, 'iPhone 15 128GB', 'iphone-15-128gb',
+            'Brand new sealed iPhone 15. Official warranty, ships from Beirut within 48h.',
+            1000.00, 10, 'IP15-128-BLK', 'database/seed-assets/iphone15.jpg');
 
-        $case = Product::create([
-            'seller_id' => $ahmed->id,
-            'category_id' => $electronics->id,
-            'name' => 'iPhone Case Clear',
-            'slug' => 'iphone-case-clear',
-            'description' => 'Shock-absorbing transparent case for iPhone 15 series.',
-            'price' => 20.00,
-            'stock' => 50,
-            'sku' => 'CASE-CLR-15',
-            'status' => ProductStatus::Active,
-        ]);
-        $this->attachDemoImage($case, 'database/seed-assets/iphone-case-clear.jpg');
+        $this->product($ahmed, $electronics, 'iPhone Case Clear', 'iphone-case-clear',
+            'Shock-absorbing transparent case for iPhone 15 series.',
+            20.00, 50, 'CASE-CLR-15', 'database/seed-assets/iphone-case-clear.jpg');
 
-        $sneakers = Product::create([
-            'seller_id' => $nadine->id,
-            'category_id' => $fashion->id,
-            'name' => 'Nike Air Sneakers',
-            'slug' => 'nike-air-sneakers',
-            'description' => 'Original Nike Air sneakers. All sizes available.',
-            'price' => 50.00,
-            'stock' => 25,
-            'sku' => 'NIKE-AIR-42',
-            'status' => ProductStatus::Active,
-        ]);
-        $this->attachDemoImage($sneakers, 'database/seed-assets/nike-air.jpg');
+        $this->product($nadine, $fashion, 'Nike Air Sneakers', 'nike-air-sneakers',
+            'Original Nike Air sneakers. All sizes available.',
+            50.00, 25, 'NIKE-AIR-42', 'database/seed-assets/nike-air.jpg');
 
-        $tshirt = Product::create([
-            'seller_id' => $nadine->id,
-            'category_id' => $fashion->id,
-            'name' => 'Classic T-Shirt',
-            'slug' => 'classic-t-shirt',
-            'description' => '100% cotton unisex t-shirt. Black and white.',
-            'price' => 20.00,
-            'stock' => 100,
-            'sku' => 'TSHIRT-CLS-M',
-            'status' => ProductStatus::Active,
-        ]);
-        $this->attachDemoImage($tshirt, 'database/seed-assets/classic-t-shirt.jpg');
+        $this->product($nadine, $fashion, 'Classic T-Shirt', 'classic-t-shirt',
+            '100% cotton unisex t-shirt. Black and white.',
+            20.00, 100, 'TSHIRT-CLS-M', 'database/seed-assets/classic-t-shirt.jpg');
 
-        $pendingUser = User::create([
-            'name' => 'Karim H.',
-            'email' => 'karim@soukelkom.test',
-            'password' => 'password',
-            'email_verified_at' => now(),
-        ]);
-        Seller::create([
-            'user_id' => $pendingUser->id,
-            'store_name' => 'Karim Home Decor',
-            'slug' => 'karim-home-decor-'.Str::lower(Str::random(4)),
-            'phone' => '+961 3 555 666',
-            'status' => 'pending',
-        ]);
+        $karimUser = $this->user('Karim H.', 'karim@soukelkom.test');
+        Seller::firstOrCreate(
+            ['user_id' => $karimUser->id],
+            [
+                'store_name' => 'Karim Home Decor',
+                'slug' => 'karim-home-decor-'.Str::lower(Str::random(4)),
+                'phone' => '+961 3 555 666',
+                'status' => SellerStatus::Pending,
+            ],
+        );
 
         $this->command?->info('Demo accounts: admin@soukelkom.test / ahmed@soukelkom.test / nadine@soukelkom.test / buyer@soukelkom.test — password: password');
+    }
+
+    protected function user(string $name, string $email): User
+    {
+        return User::firstOrCreate(
+            ['email' => $email],
+            ['name' => $name, 'password' => 'password', 'email_verified_at' => now()],
+        );
+    }
+
+    protected function seller(
+        string $userName,
+        string $userEmail,
+        string $storeName,
+        string $slug,
+        string $description,
+        string $phone,
+    ): Seller {
+        $user = $this->user($userName, $userEmail);
+        $user->syncRoles('seller');
+
+        return Seller::firstOrCreate(
+            ['slug' => $slug],
+            [
+                'user_id' => $user->id,
+                'store_name' => $storeName,
+                'description' => $description,
+                'phone' => $phone,
+                'status' => SellerStatus::Approved,
+            ],
+        );
+    }
+
+    protected function product(
+        Seller $seller,
+        Category $category,
+        string $name,
+        string $slug,
+        string $description,
+        float $price,
+        int $stock,
+        string $sku,
+        string $imagePath,
+    ): Product {
+        $product = Product::firstOrCreate(
+            ['slug' => $slug],
+            [
+                'seller_id' => $seller->id,
+                'category_id' => $category->id,
+                'name' => $name,
+                'description' => $description,
+                'price' => $price,
+                'stock' => $stock,
+                'sku' => $sku,
+                'status' => ProductStatus::Active,
+            ],
+        );
+
+        if ($product->getMedia(Product::IMAGE_COLLECTION)->isEmpty()) {
+            $this->attachDemoImage($product, $imagePath);
+        }
+
+        return $product;
     }
 
     /** Attach a bundled demo image to a product if the file exists. */
